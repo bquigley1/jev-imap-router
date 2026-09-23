@@ -99,6 +99,23 @@ about 11,000 emails, full-context classification cost **about $0.14 per 1,000 em
 bottleneck). `max_spend_usd_per_day` in the config is a hard stop, $2.00 by default.
 `jev-imap-router stats` shows your own numbers.
 
+For comparison, here's what the same input would cost on general-purpose models (list prices,
+September 2026):
+
+| Model | Cost per 1,000 emails | vs Jev |
+|---|---:|---:|
+| **Jev** | **$0.14** | 1× |
+| Kimi K2.6 | $3.42 | 24× |
+| Claude Haiku 4.5 | $3.65 | 26× |
+| GPT-6 Sol / Claude Sonnet 5 | $7.30 | 52× |
+| Gemini 3 Pro | $7.42 | 53× |
+| Claude Opus 5 | $18.24 | 130× |
+| GPT-6 Astra / Claude Fable 5.1 | $36.49 | 259× |
+
+These use the same ~3,350 input tokens per email plus a short 60-token answer. Reasoning models
+would cost more than shown, since they also bill for thinking tokens. This compares price only, not
+accuracy.
+
 ## Privacy
 
 Mail content is sent to TypeSafe's API for classification: headers and up to 12,000 characters of
