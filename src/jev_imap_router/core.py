@@ -70,7 +70,7 @@ def fatal_typesafe(e: Exception) -> None:
         sys.exit("TypeSafe account is out of credits. Add credits at https://console.typesafe.ai/settings/billing, "
                  "then run again (nothing was changed).")
     if status in (401, 403):
-        sys.exit("TypeSafe rejected the API key. Run `jev-imap-router set-key`.")
+        sys.exit("TypeSafe rejected the API key. Run `jev-imap-router login --replace-key`.")
 
 
 class BudgetExceeded(Exception):
@@ -829,14 +829,6 @@ def open_session(cfg: dict, dry_run: bool) -> tuple[Mailbox, Sorter]:
     return mb, Sorter(cfg, mb, make_classifier(cfg), State(), live)
 
 
-def cmd_set_key(_cfg: dict, _args) -> None:
-    key = getpass.getpass("TypeSafe API key (input hidden): ").strip()
-    if not key:
-        sys.exit("Nothing entered; key unchanged.")
-    keyring.set_password(KEYRING_SERVICE, "typesafe-api-key", key)
-    print("Saved to Keychain.")
-
-
 def cmd_check(cfg: dict, _args) -> None:
     mb = Mailbox(cfg)
     try:
@@ -1027,15 +1019,20 @@ def main() -> None:
     sub = p.add_subparsers(dest="cmd", required=True, metavar="command")
 
     # Getting started
-    it = sub.add_parser("init", help="set up your IMAP login, TypeSafe key, and starting categories")
+    it = sub.add_parser("init", help="create your config: mail server and starting categories")
     it.add_argument("--email")
     it.add_argument("--host")
     it.add_argument("--port")
     it.add_argument("--preset", choices=onboarding.PRESETS)
     it.add_argument("--force", action="store_true", help="overwrite an existing config")
+    it.add_argument("--no-login", action="store_true", help="don't ask for the password now (run `login` later)")
     it.add_argument("--no-test", action="store_true", help="skip the login test")
     it.set_defaults(fn=onboarding.cmd_init, needs_config=False)
-    sub.add_parser("agent-prompt", help="print the prompt for your coding agent to design categories").set_defaults(
+    lg = sub.add_parser("login", help="save your email password and TypeSafe key to the keychain, test the login")
+    lg.add_argument("--replace-key", action="store_true", help="ask for the TypeSafe key even if one is saved")
+    lg.add_argument("--no-test", action="store_true", help=argparse.SUPPRESS)
+    lg.set_defaults(fn=onboarding.cmd_login)
+    sub.add_parser("agent-prompt", help="print the setup instructions for your coding agent (same as SETUP.md)").set_defaults(
         fn=onboarding.cmd_agent_prompt, needs_config=False)
     dc = sub.add_parser("discover", help="export and summarize recent mail for designing categories (no AI)")
     dc.add_argument("--days", type=int, default=60)
@@ -1048,7 +1045,6 @@ def main() -> None:
     rv.add_argument("--last", type=int, default=2000)
     rv.set_defaults(fn=onboarding.cmd_review)
     sub.add_parser("check", help="log in and list folders; changes nothing").set_defaults(fn=cmd_check)
-    sub.add_parser("set-key", help="store or replace the TypeSafe API key").set_defaults(fn=cmd_set_key, needs_config=False)
 
     # Sorting
     for name, fn, text in (("run", cmd_run, "sort recent Inbox mail once"),
@@ -1080,7 +1076,7 @@ def main() -> None:
         args.fn(load_config(args.config) if getattr(args, "needs_config", True) else None, args)
     except LoginError:
         sys.exit("IMAP login failed. Check the address and password (for Gmail/iCloud/Outlook, use an app "
-                 "password), then run `jev-imap-router init --force`.")
+                 "password), then run `jev-imap-router login` again.")
 
 
 if __name__ == "__main__":

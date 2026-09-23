@@ -58,28 +58,46 @@ def test_every_preset_is_complete(name):
         assert c["action"] in ("keep", "move") and len(c["when"]) > 40
 
 
-def test_init_writes_a_loadable_config(tmp_path, monkeypatch):
-    saved = {}
-    monkeypatch.setattr(onboarding.keyring, "set_password", lambda svc, k, v: saved.__setitem__(k, v))
-    monkeypatch.setattr(onboarding.getpass, "getpass", lambda prompt: "app-password")
-    monkeypatch.setattr(core, "secret", lambda *a: "existing-key")
+def test_init_writes_a_loadable_config_without_secrets(tmp_path, monkeypatch):
+    def no_prompt(*a):
+        raise AssertionError("init --no-login must not ask for secrets")
+    monkeypatch.setattr(onboarding.getpass, "getpass", no_prompt)
     path = tmp_path / "config.yaml"
     args = argparse.Namespace(config=path, force=False, email="alex@gmail.com", host=None, port=None,
-                              preset="sales", no_test=True)
+                              preset="sales", no_login=True, no_test=True)
     onboarding.cmd_init(None, args)
     cfg = core.load_config(path)
     assert cfg["imap"]["host"] == "imap.gmail.com" and cfg["imap"]["username"] == "alex@gmail.com"
     assert cfg["mode"] == "preview"
     assert "Hot Lead" in [c.name for c in cfg["categories"]]
-    assert saved == {"imap:alex@gmail.com": "app-password"}
-    assert "password" not in path.read_text().lower().replace("passwords and api keys", "")
+
+
+def test_init_without_detectable_server_asks_for_host(tmp_path, monkeypatch):
+    monkeypatch.setattr(providers, "guess", lambda a: None)
+    args = argparse.Namespace(config=tmp_path / "c.yaml", force=False, email="a@custom.example", host=None,
+                              port=None, preset="universal", no_login=True, no_test=True)
+    with pytest.raises(SystemExit, match="--host"):
+        onboarding.cmd_init(None, args)
+
+
+def test_login_saves_password_and_key_to_keychain(tmp_path, monkeypatch):
+    saved = {}
+    monkeypatch.setattr(onboarding.keyring, "set_password", lambda svc, k, v: saved.__setitem__(k, v))
+    answers = iter(["app-password", "ts-key"])
+    monkeypatch.setattr(onboarding.getpass, "getpass", lambda prompt: next(answers))
+    monkeypatch.setattr(core, "secret", lambda *a: None)
+    path = tmp_path / "config.yaml"
+    path.write_text(onboarding.build_config("alex@gmail.com", "imap.gmail.com", 993, "universal"))
+    onboarding.cmd_login(core.load_config(path), argparse.Namespace(replace_key=False, no_test=True))
+    assert saved == {"imap:alex@gmail.com": "app-password", "typesafe-api-key": "ts-key"}
+    assert "app-password" not in path.read_text() and "ts-key" not in path.read_text()
 
 
 def test_init_refuses_to_overwrite(tmp_path):
     path = tmp_path / "config.yaml"
     path.write_text("mode: live\n")
     args = argparse.Namespace(config=path, force=False, email="a@gmail.com", host=None, port=None,
-                              preset="universal", no_test=True)
+                              preset="universal", no_login=True, no_test=True)
     with pytest.raises(SystemExit, match="already exists"):
         onboarding.cmd_init(None, args)
 
@@ -111,10 +129,13 @@ def test_review_summarizes_last_preview(home, capsys):
     assert "Sorted/Newsletters & Events <- Newsletters & Events (0.90) Pat <pat@gmail.com>" in out  # personal address moved
 
 
-def test_agent_prompt_ships_with_package(capsys):
+def test_agent_prompt_matches_setup_md(capsys):
+    from pathlib import Path
     onboarding.cmd_agent_prompt(None, None)
     out = capsys.readouterr().out
-    assert "discover" in out and "preview" in out and "Never switch `mode` to `live`" in out
+    setup = (Path(__file__).parent.parent / "SETUP.md").read_text()
+    assert out.strip() == setup.strip(), "src/jev_imap_router/agent_prompt.md must be a copy of SETUP.md"
+    assert "jev-imap-router login" in out and "never pass through you" in out
 
 
 def test_hard_red_flag_counts_as_scam_evidence_for_junk():

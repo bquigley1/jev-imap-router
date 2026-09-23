@@ -1,52 +1,90 @@
 ---
 name: jev-imap-router
-description: Design and tune email sorting categories for jev-imap-router (IMAP + Jev). Use when the user wants to set up, customize, or fix how jev-imap-router sorts their email, or asks their inbox to be organized with it.
+description: Set up jev-imap-router and design email sorting categories for it (IMAP + Jev). Use when the user wants their inbox sorted with jev-imap-router, or wants to set up, customize, or fix its categories.
 ---
 
-You're helping me set up jev-imap-router, a tool that sorts my email over IMAP using Jev (TypeSafe's
-classifier model). Your job: design email categories that fit MY actual mail, test them in preview
-mode, and refine them until they work well. Jev does the classifying; you write the category rules.
+# Set up jev-imap-router
+
+These instructions are for a coding agent (Claude Code, Codex, Cursor or similar) helping someone set
+up jev-imap-router. It sorts their email into folders using Jev, TypeSafe's classifier model.
+
+Work through the steps in order. Explain what you're doing in plain language as you go. Keep it
+simple for them: do the work yourself and only ask them for things you can't do.
 
 Ground rules:
-- Never switch `mode` to `live`, and never run `backfill` or `watch` without --dry-run, unless I
-  explicitly say so. Preview only. Nothing gets moved or deleted while you work.
-- My mail stays on this machine. Don't paste email contents anywhere outside this session.
-- Config: ~/.jev-imap-router/config.yaml (or $JEV_IMAP_ROUTER_HOME). Run commands with `jev-imap-router`.
-  If it isn't on PATH, use `uvx jev-imap-router`.
+- Their password and API key must never pass through you. They enter those themselves in step 3.
+- Don't set `mode: live` or run `backfill` or `install-agent` until they say so in step 6.
+  Until then everything is a preview and nothing in their mailbox changes.
+- Their email stays on this machine. Don't paste email contents anywhere outside this session.
 
-Steps:
+## 1. Install
 
-1. Understand my mail.
-   Run `jev-imap-router discover --days 60`, then read ~/.jev-imap-router/logs/discover.md: a table of
-   who emails me, how much of it is bulk, and what I reply to. Only open logs/sample.jsonl if you
-   need specifics. Tell me in a few sentences what my mail is mostly about.
+Check for uv with `uv --version`. If it's missing, ask them first, then install it:
+`curl -LsSf https://astral.sh/uv/install.sh | sh`
 
-2. Propose categories. Ask me to confirm before writing them.
-   - Inbox categories (`action: keep`) for mail I need to see: real people, customers, things needing
-     action. Flag the "needs action" one (`flag: true`). Always keep a fallback like "Review".
-   - Filing categories (`action: move`) for high-volume automated mail: receipts, newsletters,
-     notifications, promotions, calendar, travel, cold outreach, and anything big and specific to me
-     (e.g. my own product's automated emails, lead alerts, a hobby).
-   - Keep "Junk" with `folder: "@junk"` and `min_confidence: 0.90`.
-   - 8 to 16 categories total. Jev accepts up to 255 options, but clear beats many.
-   - Write each `when` as literal inclusions and exclusions, naming real senders and examples from my
-     mail ("Stripe, GitHub, and AWS receipts"; "Excludes marketing from companies I already use").
-     Jev reads instructions literally, so say exactly what you mean.
+Then install jev-imap-router:
+`uv tool install jev-imap-router`
+If that isn't found, use `uv tool install git+https://github.com/bquigley1/jev-imap-router`.
 
-3. Test in preview.
-   Run `jev-imap-router preview --limit 300`, then `jev-imap-router review` and read the output.
-   It shows where mail would go, each folder's top senders, moves worth a second look, and
-   low-confidence decisions.
+Check it worked with `jev-imap-router --version`.
 
-4. Fix what's wrong, and repeat step 3 two or three times:
-   - A sender in the wrong folder: tighten the `when` text of both categories involved (add the sender
-     as an example or an exclusion). Don't add special cases in code.
-   - Real people or conversations being filed: they should stay in the Inbox. Conversations I've
-     replied to are protected automatically; strengthen the Inbox category wording for the rest.
-   - Lots of mail stuck in the Inbox with low confidence between two folders: the descriptions
-     overlap, so make them distinct.
-   - Anything important going to Spam: stop and tell me.
+## 2. Create their config
 
-5. Report back: the final categories, what the last preview would do (counts per folder), anything
-   still uncertain, and the cost so far (`jev-imap-router stats --include-preview`). Then tell me the
-   next steps: set `mode: live`, run `jev-imap-router backfill`, then `jev-imap-router install-agent`.
+Ask for the email address they want sorted. Then run:
+`jev-imap-router init --email THEIR_ADDRESS --preset universal --no-login`
+
+This fills in their mail server and writes `~/.jev-imap-router/config.yaml`. If it can't detect the
+server, ask them for it (their provider's IMAP settings page lists it) and add `--host HOST`.
+
+## 3. Have them log in
+
+Ask them to open a separate terminal window and run:
+`jev-imap-router login`
+
+It asks for two things with hidden typing, and gives provider-specific help:
+1. An app password for their email. Gmail, iCloud, Outlook.com and Yahoo require one.
+2. A TypeSafe API key from https://console.typesafe.ai/keys (they'll need to add a few dollars of credit).
+
+Wait until they tell you it printed "Logged in". If it failed, help them with the app password.
+
+## 4. Design categories that fit their mail
+
+Run `jev-imap-router discover --days 60`, then read `~/.jev-imap-router/logs/discover.md`. It's a
+table of who emails them, how much of it is bulk mail, and what they reply to. Only open
+`logs/sample.jsonl` if you need specifics. Tell them in a few sentences what their mail is mostly about.
+
+Then propose categories and ask them to confirm before you edit `config.yaml`:
+- Inbox categories (`action: keep`) for mail they need to see: real people, customers, things
+  needing action. Flag the "needs action" one with `flag: true`. Keep a fallback called "Review".
+- Filing categories (`action: move`) for high-volume automated mail: receipts, newsletters,
+  notifications, promotions, calendar, travel, cold outreach, and anything big and specific to them
+  such as their own product's automated emails, lead alerts or a hobby.
+- Keep "Junk" with `folder: "@junk"` and `min_confidence: 0.90`.
+- Aim for 8 to 16 categories in total.
+- Write each `when` as literal inclusions and exclusions that name real senders from their mail, for
+  example "Stripe, GitHub and AWS receipts" or "Excludes marketing from companies they already use".
+  Jev reads instructions literally, so say exactly what you mean.
+
+## 5. Preview and refine
+
+Run `jev-imap-router preview`, then `jev-imap-router review`, and read the output. It shows where
+mail would go, each folder's top senders, the moves worth a second look, and low-confidence decisions.
+
+Fix what's wrong, then preview again. Two or three rounds is usually enough.
+- If a sender lands in the wrong folder, tighten the `when` text of both categories involved.
+- If real people or conversations are being filed, strengthen the wording of the Inbox categories.
+  Conversations they've replied to are already protected automatically.
+- If a lot of mail stays in the Inbox with low confidence between two folders, the two descriptions
+  overlap. Make them distinct.
+- If anything important is headed to Spam, stop and show them.
+
+## 6. Hand off
+
+Summarize the final categories, what the last preview would do (counts per folder), anything still
+uncertain, and the cost so far (`jev-imap-router stats --include-preview`).
+
+Then ask whether they want to turn it on. If they say yes:
+1. Set `mode: live` in `~/.jev-imap-router/config.yaml`.
+2. Run `jev-imap-router backfill --limit 5000` to sort existing mail, newest first.
+3. Run `jev-imap-router install-agent` so new mail is sorted as it arrives (macOS). On Linux, suggest
+   running `jev-imap-router watch` under systemd.

@@ -61,55 +61,62 @@ def ask(prompt: str, default: str = "") -> str:
 
 
 def cmd_init(_cfg, args) -> None:
-    """Interactive setup: IMAP login, TypeSafe key, starting categories."""
+    """Write a config: mailbox server settings and starting categories. No secrets involved."""
     path: Path = args.config
-    print("jev-imap-router setup\n")
     if path.exists() and not args.force:
         sys.exit(f"{path} already exists. Edit it directly, or run `init --force` to start over.")
     address = args.email or ask("Your email address")
     guess = providers.guess(address)
+    scripted = bool(args.email)  # flags given: take detected settings instead of prompting
     if guess:
         print(f"Looks like {guess.name}.")
-    scripted = bool(args.email)  # flags given: take detected settings instead of prompting
+    elif scripted and not args.host:
+        sys.exit(f"Couldn't detect the IMAP server for {address}. Pass --host (and --port if it isn't 993).")
     host = args.host or (guess.host if guess and scripted else ask("IMAP server", guess.host if guess else ""))
     port = int(args.port or (guess.port if guess and scripted else ask("IMAP port", str(guess.port if guess else 993))))
-    if guess and guess.password_help:
-        print(f"\nPassword: {guess.password_help}")
-    password = getpass.getpass(f"IMAP password for {address} (hidden): ")
-    keyring.set_password(core.KEYRING_SERVICE, f"imap:{address}", password)
-    if not core.secret("typesafe-api-key", "TYPESAFE_API_KEY"):
-        print("\nJev runs on TypeSafe's API. Create a key at https://console.typesafe.ai/keys")
-        key = getpass.getpass("TypeSafe API key (hidden): ").strip()
-        if key:
-            keyring.set_password(core.KEYRING_SERVICE, "typesafe-api-key", key)
-
-    print("\nStarting categories (you can change them any time):")
-    for i, name in enumerate(PRESETS, 1):
-        p = preset(name)
-        print(f"  {i}. {p['name']}: {p['summary']}")
-    print(f"  {len(PRESETS) + 1}. Let my coding agent design them from my mail (starts from Universal)")
-    choice = args.preset or ask("Choose", "1")
-    agent = choice == str(len(PRESETS) + 1)
-    name = "universal" if agent else (choice if choice in PRESETS else PRESETS[int(choice) - 1])
-
+    if args.preset:
+        name = args.preset
+    else:
+        print("\nStarting categories (you or your agent can change them any time):")
+        for i, key in enumerate(PRESETS, 1):
+            p = preset(key)
+            print(f"  {i}. {p['name']}: {p['summary']}")
+        choice = ask("Choose", "1")
+        name = choice if choice in PRESETS else PRESETS[int(choice) - 1]
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(build_config(address, host, port, name))
-    print(f"\nWrote {path}")
-    if not args.no_test:
-        print("Testing the login...")
-        cfg = core.load_config(path)
-        mb = core.Mailbox(cfg)
-        print(f"Logged in. Spam folder: {mb.junk_folder() or 'not found'}. "
-              f"Inbox: {mb.client.folder_status(mb.inbox, [b'MESSAGES'])[b'MESSAGES']} messages.")
+    print(f"Wrote {path}")
+    if args.no_login:
+        print("Next: run `jev-imap-router login` in your own terminal to add your password and API key.")
+        return
+    cmd_login(core.load_config(path), args)
+
+
+def cmd_login(cfg, args) -> None:
+    """Store the IMAP password and TypeSafe API key in the system keychain, then test the login."""
+    address = cfg["imap"]["username"]
+    known = next((p for p in providers.BY_DOMAIN.values() if p.host == cfg["imap"]["host"]), None)
+    known = known or next((p for p in providers.BY_MX.values() if p.host == cfg["imap"]["host"]), None)
+    print(f"Logging in to {address} ({cfg['imap']['host']}). Your typing is hidden and goes to the keychain.")
+    if known and known.password_help:
+        print(f"\nPassword help: {known.password_help}")
+    password = getpass.getpass(f"\nIMAP password for {address}: ")
+    keyring.set_password(core.KEYRING_SERVICE, f"imap:{address}", password)
+    if getattr(args, "replace_key", False) or not core.secret("typesafe-api-key", "TYPESAFE_API_KEY"):
+        print("\nJev runs on TypeSafe's API. Create a key at https://console.typesafe.ai/keys")
+        key = getpass.getpass("TypeSafe API key: ").strip()
+        if key:
+            keyring.set_password(core.KEYRING_SERVICE, "typesafe-api-key", key)
+    if getattr(args, "no_test", False):
+        return
+    print("\nTesting the login...")
+    mb = core.Mailbox(cfg)
+    try:
+        count = mb.client.folder_status(mb.inbox, [b"MESSAGES"])[b"MESSAGES"]
+        print(f"Logged in. Inbox: {count} messages. Spam folder: {mb.junk_folder() or 'not found'}.")
+    finally:
         mb.close()
-    print("\nNext:")
-    if agent:
-        print("  1. Open your coding agent (Claude Code, Cursor, Codex, ...) and paste the prompt from:")
-        print("       jev-imap-router agent-prompt")
-    else:
-        print("  1. jev-imap-router preview      # classify recent mail, change nothing")
-        print("  2. jev-imap-router review       # see where everything would go")
-    print(f"  Then set `mode: live` in {path} and run `jev-imap-router backfill`, then `install-agent`.")
+    print("\nNext: `jev-imap-router preview`, then `jev-imap-router review`.")
 
 
 def cmd_discover(cfg, args) -> None:
