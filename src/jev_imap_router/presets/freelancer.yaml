@@ -1,0 +1,37 @@
+name: Freelancer / creator
+summary: Clients, qualified opportunities, and money up front; low-quality collab spam filed away.
+categories:
+  - name: Client Work
+    when: >-
+      An active client needs a deliverable, decision, reply, revision, meeting, approval, or fix.
+    action: keep
+    flag: true
+  - name: Opportunities
+    when: >-
+      A credible project, sponsorship, speaking, media, consulting, or collaboration request with
+      relevant scope, timing, budget, or context. Excludes vague or mass collab pitches (Cold Outreach).
+    action: keep
+  - name: Money & Contracts
+    when: >-
+      Invoices you sent or received, payment status, tax documents, statements of work, contracts,
+      signatures, and licensing or usage-rights conversations.
+    action: keep
+  - name: Audience
+    when: >-
+      Meaningful replies from readers, followers, students, or community members.
+    action: keep
+  - name: Platforms
+    when: >-
+      Account, performance, and payout notices from publishing, commerce, social, analytics, or ad
+      platforms that need no action.
+    action: move
+    min_confidence: 0.85
+  - name: Action Required
+    when: >-
+      Account, security, payment, or legal notices that need you to do something.
+    action: keep
+    flag: true
+  - name: Review
+    when: >-
+      A legitimate or ambiguous message that doesn't clearly fit any other category.
+    action: keep

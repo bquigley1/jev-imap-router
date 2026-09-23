@@ -1,0 +1,54 @@
+# Filing folders shared by every preset. `action: move` files to <folder_parent>/<name> when Jev is
+# confident; anything uncertain stays in the Inbox. Junk goes to the server's real Junk/Spam folder.
+categories:
+  - name: Receipts & Billing
+    when: >-
+      Receipts, invoices, statements, subscription renewals, account recharges, ad receipts, and
+      payment confirmations, when there is no problem to fix. Problems and disputes are Action Required.
+    action: move
+    min_confidence: 0.85
+  - name: Newsletters & Events
+    when: >-
+      Opt-in newsletters, product update emails from tools you use, community digests, webinars, and
+      event listings or reminders. Excludes direct correspondence and anything needing a reply.
+    action: move
+    min_confidence: 0.85
+  - name: Notifications
+    when: >-
+      Low-risk automated notifications from apps and services (activity digests, monitoring, "someone
+      commented", shipping updates) that need no reply or action. Excludes security, access, payment,
+      and service-failure alerts, which are Action Required.
+    action: move
+    min_confidence: 0.85
+  - name: Promotions & Social
+    when: >-
+      Retail and brand marketing, sales and discounts, loyalty offers, and social network notifications,
+      including marketing from companies you already use.
+    action: move
+    min_confidence: 0.85
+  - name: Calendar
+    when: >-
+      Calendar invitations, updates, cancellations, accept/decline replies, and automated event reminders.
+    action: move
+    min_confidence: 0.90
+  - name: Travel
+    when: >-
+      Flight, hotel, rental, and trip confirmations, check-in reminders, itineraries, loyalty statements,
+      and post-stay surveys.
+    action: move
+    min_confidence: 0.85
+  - name: Cold Outreach
+    when: >-
+      Unsolicited pitches from strangers: agencies, SEO, lead-gen, data vendors, recruiting spam, "worth
+      exploring?" sales sequences, business loan pre-approvals. Excludes marketing from companies you
+      already have an account with (Promotions & Social) and credible, specific opportunities.
+    action: move
+    min_confidence: 0.90
+  - name: Junk
+    when: >-
+      Phishing, scams, and impersonation: fake bank, payroll, card, or account alerts from unrelated
+      domains, fake prizes, fake software giveaways, bogus "undelivered email" or "policy violation"
+      warnings, and incoherent mass spam. Excludes legitimate but low-priority mail.
+    action: move
+    folder: "@junk"
+    min_confidence: 0.90

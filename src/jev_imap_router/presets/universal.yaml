@@ -1,0 +1,30 @@
+name: Universal
+summary: A balanced default for personal or work inboxes.
+categories:
+  - name: Action Required
+    when: >-
+      A legitimate message that needs a reply, decision, approval, task, or time-sensitive action,
+      including unresolved access, security, payment, delivery, legal, or account problems. Excludes
+      optional reading and routine confirmations.
+    action: keep
+    flag: true
+  - name: People
+    when: >-
+      A person-to-person conversation with family, friends, colleagues, clients, or known contacts.
+      Excludes automated mail, mass mail, and unsolicited pitches from strangers.
+    action: keep
+  - name: Important Update
+    when: >-
+      A meaningful update from a trusted person, employer, school, service, or account worth keeping in
+      view, that needs no action right now. Excludes newsletters, receipts, and routine notifications.
+    action: keep
+  - name: Opportunities
+    when: >-
+      A specific, credible job, business, partnership, speaking, media, or collaboration opportunity with
+      relevant context. Excludes generic mass pitches (Cold Outreach).
+    action: keep
+  - name: Review
+    when: >-
+      A legitimate or ambiguous message that doesn't clearly fit any other category. Use this instead of
+      forcing a weak match.
+    action: keep

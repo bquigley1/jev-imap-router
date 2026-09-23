@@ -1,0 +1,9 @@
+.venv/
+__pycache__/
+.pytest_cache/
+dist/
+*.egg-info/
+# never commit a real config, state, or mail
+config.yaml
+state.json
+logs/

@@ -1,0 +1,36 @@
+name: Sales & business development
+summary: Buying intent and active deals up front; prospecting noise filed away.
+categories:
+  - name: Hot Lead
+    when: >-
+      A prospect shows specific buying intent: pricing, demo request, procurement or security review,
+      availability, scope, or a next step. Excludes generic interest and vendor pitches.
+    action: keep
+    flag: true
+  - name: Active Deal
+    when: >-
+      An opportunity already in progress needs a reply, proposal revision, legal or security response,
+      approval, or scheduled follow-up.
+    action: keep
+  - name: Customers
+    when: >-
+      Current customers needing onboarding help, renewal attention, issue resolution, or follow-up.
+    action: keep
+  - name: Partners
+    when: >-
+      A credible channel, integration, referral, reseller, or co-marketing partner with concrete relevance.
+    action: keep
+  - name: Sales Tools
+    when: >-
+      Automated CRM, scheduling, call-recording, sequencing, and pipeline notifications.
+    action: move
+    min_confidence: 0.85
+  - name: Action Required
+    when: >-
+      Account, security, payment, or legal notices that need you to do something.
+    action: keep
+    flag: true
+  - name: Review
+    when: >-
+      A legitimate or ambiguous message that doesn't clearly fit any other category.
+    action: keep

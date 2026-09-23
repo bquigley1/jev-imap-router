@@ -1,0 +1,41 @@
+name: Founder / operator
+summary: Decisions, customers, investors, and team up front; vendor pitches filed away.
+categories:
+  - name: Action Required
+    when: >-
+      Needs you to decide, approve, sign, reply, or fix something: contracts to sign, failed payments,
+      security or account problems, quota or deadline warnings, and requests only you can answer.
+    action: keep
+    flag: true
+  - name: Customers
+    when: >-
+      A current or prospective customer writing personally: questions, support, billing issues, feedback,
+      escalations, churn risk, and replies to your product's automated emails. Excludes automated
+      notices sent by your own product.
+    action: keep
+  - name: Investors & Board
+    when: >-
+      Current investors, board members, advisors, or active fundraising conversations. Excludes generic
+      fundraising services and mass investor lists.
+    action: keep
+  - name: Team & Partners
+    when: >-
+      Teammates, contractors, lawyers, accountants, partners, and vendors you already work with, writing
+      personally: project threads, blockers, intros, and follow-ups.
+    action: keep
+  - name: Leads
+    when: >-
+      New sales interest in your product: contact form submissions, sign-up or lead alerts, and demo
+      bookings. Excludes vendors selling to you (Cold Outreach).
+    action: move
+    min_confidence: 0.85
+  - name: Product & System
+    when: >-
+      Automated email from your own product and infrastructure: transactional copies, error reports
+      (Sentry, etc.), deploy and monitoring notices, and internal tool notifications that need no action.
+    action: move
+    min_confidence: 0.85
+  - name: Review
+    when: >-
+      A legitimate or ambiguous message that doesn't clearly fit any other category.
+    action: keep

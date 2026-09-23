@@ -1,0 +1,46 @@
+[project]
+name = "jev-imap-router"
+version = "0.1.0"
+description = "AI inbox sorting for any IMAP mailbox (Gmail, iCloud, Fastmail, Outlook, custom domains), powered by Jev"
+readme = "README.md"
+requires-python = ">=3.11"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Bennett Quigley" }]
+keywords = ["email", "imap", "inbox", "spam", "classification", "jev", "typesafe", "ai"]
+classifiers = [
+    "Environment :: Console",
+    "Intended Audience :: End Users/Desktop",
+    "Operating System :: MacOS",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3",
+    "Topic :: Communications :: Email :: Filters",
+]
+dependencies = [
+    "dnspython>=2.6",
+    "imapclient>=3.0",
+    "keyring>=25",
+    "pyyaml>=6",
+    "truststore>=0.10",
+    "typesafe-sdk>=0.7.1",
+]
+
+[project.urls]
+Homepage = "https://github.com/bquigley1/jev-imap-router"
+Issues = "https://github.com/bquigley1/jev-imap-router/issues"
+
+[project.scripts]
+jev-imap-router = "jev_imap_router.core:main"
+
+[dependency-groups]
+dev = ["pytest>=8"]
+
+[build-system]
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/jev_imap_router"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
