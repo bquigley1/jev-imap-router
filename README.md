@@ -1,9 +1,10 @@
 # jev-imap-router
 
-AI inbox sorting for any IMAP mailbox: Gmail, iCloud, Fastmail, Outlook.com, Yahoo, or your own domain.
+AI inbox sorting for any IMAP mailbox, including Gmail, iCloud, Fastmail, Outlook.com, Yahoo and your
+own domain.
 
-You describe your categories in plain English. [Jev](https://docs.typesafe.ai/introduction) reads each
-email and picks one. The email is filed on your mail server, so Apple Mail, Outlook, your phone, and
+You describe your categories in plain English and [Jev](https://docs.typesafe.ai/introduction) picks
+one for each email. Emails are filed on your mail server, so Apple Mail, Outlook, your phone and
 webmail all see the same folders. Nothing is ever deleted.
 
 ```
@@ -16,91 +17,95 @@ Inbox (what you actually need to see)       Sorted/
                                               ...        Junk -> your Spam folder
 ```
 
-## Quick start
+## Set it up with your coding agent
 
-You need Python 3.11+ with [uv](https://docs.astral.sh/uv/), an IMAP app password for your mailbox,
-and a TypeSafe API key from [console.typesafe.ai](https://console.typesafe.ai/keys).
+Paste this into Claude Code, Codex, Cursor or any agent that can run commands:
 
-```sh
-uv tool install jev-imap-router      # or run anything below with `uvx jev-imap-router ...`
-jev-imap-router init                 # email, password, API key, starting categories
-jev-imap-router preview              # classify your 300 most recent emails, move nothing
-jev-imap-router review               # where would everything go?
+```
+Set up jev-imap-router for me by following https://raw.githubusercontent.com/bquigley1/jev-imap-router/main/SETUP.md
 ```
 
-When the review looks right, set `mode: live` in `~/.jev-imap-router/config.yaml`, then:
+Your agent installs the tool, reads a summary of who emails you, designs categories that fit your mail
+and shows you a preview of where everything would go. You only do two things yourself. You enter your
+email app password and a [TypeSafe API key](https://console.typesafe.ai/keys) in your own terminal, so
+they never pass through the agent. And you say when to turn it on.
+
+Nothing in your mailbox changes until you say so.
+
+## Set it up yourself
+
+You need [uv](https://docs.astral.sh/uv/), an app password for your email and a TypeSafe API key.
+
+```sh
+uv tool install jev-imap-router
+jev-imap-router init        # your email address and a starting set of categories
+jev-imap-router preview     # classify your 300 most recent emails without moving anything
+jev-imap-router review      # see where everything would go
+```
+
+`init` asks for your password and API key and saves them to your system keychain. It fills in the mail
+server for Gmail, iCloud, Outlook.com, Yahoo, Fastmail, AOL, Zoho, Proton (through Bridge) and
+Namecheap Private Email, and looks up the MX record for custom domains.
+
+When the review looks right, set `mode: live` in `~/.jev-imap-router/config.yaml` and run:
 
 ```sh
 jev-imap-router backfill --limit 5000    # sort existing mail, newest first
-jev-imap-router install-agent            # keep sorting new mail as it arrives (macOS)
+jev-imap-router install-agent            # sort new mail as it arrives (macOS)
 ```
 
-`init` fills in the IMAP server for Gmail, iCloud, Outlook.com, Yahoo, Fastmail, AOL, Zoho, Proton
-(via Bridge), and Namecheap Private Email. For custom domains it checks your MX record. Passwords and
-API keys go in your system keychain, never in the config file.
+## Categories
 
-## Choosing your categories
+`init` starts you with one of four presets: Universal, Founder/operator, Sales or Freelancer/creator.
+Each one has Inbox categories for that kind of work plus shared filing folders for receipts,
+newsletters, notifications, promotions, calendar, travel, cold outreach and junk.
 
-There are three ways, and you can switch any time:
-
-**1. Presets.** `init` offers Universal, Founder/operator, Sales, and Freelancer/creator. Each is a set
-of Inbox categories for that role, plus shared filing folders (receipts, newsletters, notifications,
-promotions, calendar, travel, cold outreach, junk).
-
-**2. Let your coding agent design them from your mail.** This gives the best results. Run
-`jev-imap-router agent-prompt` and paste the output into Claude Code, Cursor, Codex, or any agent that
-can run commands. The agent will:
-
-1. run `discover`, which summarizes who emails you (locally, no AI involved)
-2. propose categories that fit your mail, and ask you to confirm them
-3. run `preview` and `review`, then fix the categories that misfile, two or three rounds
-4. stop before anything goes live
-
-For Claude Code, you can install it as a skill instead:
-`cp -r agent/skills/jev-imap-router ~/.claude/skills/`
-
-**3. Write them yourself.** Categories live in `config.yaml`:
+The agent setup above replaces the preset with categories built from your own mail, which works
+better. You can also edit them yourself in `config.yaml`:
 
 ```yaml
 - name: Receipts & Billing
   when: >-
-    Receipts, invoices, and payment confirmations when there's no problem to fix,
-    including Stripe, GitHub, and AWS receipts. Problems are Action Required.
-  action: move            # keep = stays in Inbox, move = filed under Sorted/
+    Receipts, invoices and payment confirmations when there's no problem to fix,
+    including Stripe, GitHub and AWS receipts. Problems are Action Required.
+  action: move            # keep = stays in the Inbox, move = filed under Sorted/
   min_confidence: 0.85
 ```
 
-Jev reads `when` literally, so name real senders and spell out exclusions. It handles up to 255
-categories per request, but 8 to 16 clear ones work best.
+Jev reads `when` literally, so name real senders and spell out what doesn't belong. It accepts up to
+255 categories, but 8 to 16 clear ones work best.
 
 ## How it decides
 
-- **One call per email, full context.** Jev gets the headers, the body text (up to 12,000 characters),
-  and sender checks computed in code: whether the sender's own domain signed the email (DKIM/SPF/DMARC),
-  whether the display name claims another brand or your own domain ("VoiceMail | yourdomain.com"),
-  where the links really point, lookalike and throwaway domains, risky attachment types, and fake
-  "Re:" threads. Your provider's own spam verdict is deliberately left out, so Jev doesn't just copy it.
-- **Confidence decides what moves.** A category only files mail when Jev is confident. If it's torn
-  between two filing folders (say, Newsletters vs Promotions), it still files by adding up those
-  probabilities. If there's a real chance the email is personal or needs action, it stays in the Inbox.
-- **Conversations are protected.** Anything you've replied to, and any real reply or forward
-  (with genuine threading headers), is never filed, whatever Jev says.
-- **Junk is strict.** Mail goes to Spam only when Jev picks Junk *and* either rates it as likely a scam
-  or it carries a clear red flag (brand impersonation, your own domain in a stranger's name), because
-  many providers' spam filters learn from what you move there.
-- **Preview first, always.** New configs start in `mode: preview`, and every decision is logged to
-  `~/.jev-imap-router/logs/decisions.jsonl`.
+Each email gets one Jev call with the full picture. That includes the headers, up to 12,000 characters
+of body text and a set of sender checks computed in code. The checks cover whether the sender's own
+domain signed the email, whether the display name claims another brand or your own domain, where the
+links really point, lookalike and throwaway domains, risky attachments and fake "Re:" threads. Your
+provider's own spam verdict is left out on purpose so that Jev doesn't simply copy it.
+
+An email is only filed when Jev is confident it belongs in a folder. When Jev is split between two
+folders such as Newsletters and Promotions, their probabilities are added together and the email is
+filed under the stronger one. When there's a real chance an email is personal or needs action, it
+stays in the Inbox.
+
+Conversations you're part of are never filed. That covers anything you've replied to and any genuine
+reply or forward.
+
+Mail only goes to Spam when Jev picks Junk and also rates it as a likely scam or finds a clear red flag
+like brand impersonation. Many providers' spam filters learn from what you move into Spam, so this
+rule is deliberately strict.
+
+New setups start in preview mode, which logs every decision to
+`~/.jev-imap-router/logs/decisions.jsonl` without touching your mailbox.
 
 ## Cost and speed
 
-Jev bills input tokens only ($0.042 per million at the time of writing). On one real mailbox of
-about 11,000 emails, full-context classification cost **about $0.14 per 1,000 emails** and ran at
-**about 200 emails a minute** (157 ms median per Jev call, 8 in parallel; downloading mail was the
-bottleneck). `max_spend_usd_per_day` in the config is a hard stop, $2.00 by default.
+Jev charges for input tokens only, currently $0.042 per million. On a real mailbox of about 11,000
+emails it cost **about $0.14 per 1,000 emails** and sorted **about 200 emails a minute**. Downloading
+mail from the server was the slowest part. The config has a daily spending limit of $2 by default, and
 `jev-imap-router stats` shows your own numbers.
 
-For comparison, here's what the same input would cost on general-purpose models (list prices,
-September 2026):
+Here's what the same work would cost on general-purpose models at September 2026 list prices:
 
 | Model | Cost per 1,000 emails | vs Jev |
 |---|---:|---:|
@@ -112,27 +117,29 @@ September 2026):
 | Claude Opus 5 | $18.24 | 130× |
 | GPT-6 Astra / Claude Fable 5.1 | $36.49 | 259× |
 
-These use the same ~3,350 input tokens per email plus a short 60-token answer. Reasoning models
-would cost more than shown, since they also bill for thinking tokens. This compares price only, not
-accuracy.
+These figures use the same 3,350 input tokens per email plus a 60-token answer. Reasoning models would
+cost more because they also charge for thinking tokens. The table compares price only, not accuracy.
 
 ## Privacy
 
-Mail content is sent to TypeSafe's API for classification: headers and up to 12,000 characters of
-text per email. See [TypeSafe's data handling](https://docs.typesafe.ai/models). Nothing else leaves
-your machine. `discover` samples stay in `~/.jev-imap-router/logs/`.
+Headers and up to 12,000 characters of text from each email are sent to TypeSafe's API for
+classification. You can read about [how TypeSafe handles data](https://docs.typesafe.ai/models).
+Nothing else leaves your machine, and the samples used to design categories stay in
+`~/.jev-imap-router/logs/`.
 
 ## Limitations
 
-- `install-agent` uses macOS launchd. On Linux, run `jev-imap-router watch` under systemd or tmux for now.
-- Microsoft 365 work accounts that require OAuth for IMAP aren't supported yet (app passwords only).
-- In Gmail, IMAP folders are labels: filing adds the `Sorted/...` label and removes the email from the Inbox.
+- `install-agent` uses macOS launchd. On Linux you can run `jev-imap-router watch` under systemd for now.
+- Microsoft 365 work accounts that require OAuth for IMAP aren't supported yet. App passwords work.
+- Gmail treats IMAP folders as labels, so filing an email adds a `Sorted/...` label and removes it from
+  the Inbox.
 
 ## Credits
 
-Inspired by [jevMail](https://github.com/ilyamk/jev-gmail-ai-spam-filter-and-labeling) by Ilia AGI,
-which does this for Gmail via Google Apps Script. Presets and the classification policy are adapted
-from it under the MIT license. Classification by [Jev](https://docs.typesafe.ai/introduction) from TypeSafe.
+This project was inspired by [jevMail](https://github.com/ilyamk/jev-gmail-ai-spam-filter-and-labeling)
+by Ilia AGI, which does the same for Gmail through Google Apps Script. The presets and classification
+policy are adapted from it under the MIT license. Classification is done by
+[Jev](https://docs.typesafe.ai/introduction) from TypeSafe.
 
 ## License
 
