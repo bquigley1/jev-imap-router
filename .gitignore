@@ -7,3 +7,6 @@ dist/
 config.yaml
 state.json
 logs/
+
+# local tooling (e.g. the README GIF generator)
+scripts/

@@ -1,21 +1,15 @@
 # jev-imap-router
 
+<p align="center">
+  <img src="docs/demo.gif" alt="Emails arrive in the Inbox, pass through Jev, and are filed into Receipts, Newsletters, Cold Outreach or Spam, while personal emails stay in the Inbox" width="760">
+</p>
+
 AI inbox sorting for any IMAP mailbox, including Gmail, iCloud, Fastmail, Outlook.com, Yahoo and your
 own domain.
 
 You describe your categories in plain English and [Jev](https://docs.typesafe.ai/introduction) picks
 one for each email. Emails are filed on your mail server, so Apple Mail, Outlook, your phone and
 webmail all see the same folders. Nothing is ever deleted.
-
-```
-Inbox (what you actually need to see)       Sorted/
-  Action Required  ⚑                          Receipts & Billing
-  Customers                                   Newsletters & Events
-  People                                      Notifications
-  Review (Jev wasn't sure)                    Promotions & Social
-                                              Cold Outreach
-                                              ...        Junk -> your Spam folder
-```
 
 ## Set it up with your coding agent
 
