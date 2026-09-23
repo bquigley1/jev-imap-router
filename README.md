@@ -1,7 +1,7 @@
 # jev-imap-router
 
 <p align="center">
-  <img src="docs/demo.gif" alt="Emails arrive in the Inbox, pass through Jev, and are filed into Receipts, Newsletters, Cold Outreach or Spam, while personal emails stay in the Inbox" width="760">
+  <img src="https://raw.githubusercontent.com/bquigley1/jev-imap-router/main/docs/demo.gif" alt="Emails arrive in the Inbox, pass through Jev, and are filed into Receipts, Newsletters, Cold Outreach or Spam, while personal emails stay in the Inbox" width="760">
 </p>
 
 AI inbox sorting for any IMAP mailbox, including Gmail, iCloud, Fastmail, Outlook.com, Yahoo and your
